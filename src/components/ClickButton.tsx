@@ -15,8 +15,6 @@ export const ClickButton = ({ currentCount, onClickSuccess, userId }: ClickButto
   const { toast } = useToast();
 
   const handleClick = async (e: React.MouseEvent<HTMLButtonElement>) => {
-    setIsClicking(true);
-
     // Create ripple effect
     const button = e.currentTarget;
     const rect = button.getBoundingClientRect();
@@ -29,52 +27,49 @@ export const ClickButton = ({ currentCount, onClickSuccess, userId }: ClickButto
       setRipples((prev) => prev.filter((r) => r.id !== id));
     }, 600);
 
-    try {
-      // Increment the global counter
-      const { data: counterData, error: counterError } = await supabase
-        .from("global_counter")
-        .select("count")
-        .eq("id", 1)
-        .single();
+    // Fire and forget - don't wait for the response
+    (async () => {
+      try {
+        // Increment the global counter
+        const { data: counterData, error: counterError } = await supabase
+          .from("global_counter")
+          .select("count")
+          .eq("id", 1)
+          .single();
 
-      if (counterError) throw counterError;
+        if (counterError) throw counterError;
 
-      const newCount = (counterData?.count || 0) + 1;
+        const newCount = (counterData?.count || 0) + 1;
 
-      // Update global counter
-      const { error: updateError } = await supabase
-        .from("global_counter")
-        .update({ count: newCount, last_updated: new Date().toISOString() })
-        .eq("id", 1);
+        // Update global counter
+        const { error: updateError } = await supabase
+          .from("global_counter")
+          .update({ count: newCount, last_updated: new Date().toISOString() })
+          .eq("id", 1);
 
-      if (updateError) throw updateError;
+        if (updateError) throw updateError;
 
-      // Record the click
-      const { error: clickError } = await supabase.from("clicks").insert({
-        user_id: userId,
-        global_count_at_click: newCount,
-      });
+        // Record the click
+        const { error: clickError } = await supabase.from("clicks").insert({
+          user_id: userId,
+          global_count_at_click: newCount,
+        });
 
-      if (clickError) throw clickError;
+        if (clickError) throw clickError;
 
-      // Update user's total clicks
-      const { error: profileError } = await supabase.rpc("increment_user_clicks", {
-        user_id: userId,
-      });
+        // Update user's total clicks
+        await supabase.rpc("increment_user_clicks", {
+          user_id: userId,
+        });
 
-      // Check for achievements
-      checkAchievements(newCount);
+        // Check for achievements
+        checkAchievements(newCount);
 
-      onClickSuccess();
-    } catch (error: any) {
-      toast({
-        title: "Click failed!",
-        description: error.message,
-        variant: "destructive",
-      });
-    } finally {
-      setIsClicking(false);
-    }
+        onClickSuccess();
+      } catch (error: any) {
+        console.error("Click error:", error);
+      }
+    })();
   };
 
   const checkAchievements = async (count: number) => {
@@ -91,8 +86,7 @@ export const ClickButton = ({ currentCount, onClickSuccess, userId }: ClickButto
     <div className="relative">
       <Button
         onClick={handleClick}
-        disabled={isClicking}
-        className="relative overflow-hidden w-64 h-64 rounded-full text-8xl font-bold box-glow-primary hover:scale-105 active:scale-95 disabled:opacity-50 disabled:scale-100"
+        className="relative overflow-hidden w-64 h-64 rounded-full text-8xl font-bold box-glow-primary hover:scale-105 active:scale-95 transition-transform duration-100"
         style={{
           background: "var(--gradient-primary)",
         }}
