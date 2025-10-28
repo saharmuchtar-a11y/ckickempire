@@ -146,7 +146,7 @@ const Game = () => {
             <Chat
               userId={user.id}
               username={profile?.username || "Anonymous"}
-              isPremium={profile?.is_premium || false}
+              isPremium={true}
             />
           </div>
         </div>

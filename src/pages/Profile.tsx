@@ -98,11 +98,10 @@ const Profile = () => {
                 🎮
               </div>
               <h2 className="text-2xl font-bold glow-primary mb-2">
-                {profile?.username}
-                {profile?.is_premium && " 👑"}
+                {profile?.username} 👑
               </h2>
               <p className="text-muted-foreground mb-6">
-                {profile?.is_premium ? "Premium Member" : "Free Player"}
+                Premium Member
               </p>
 
               <div className="space-y-4">

@@ -15,8 +15,6 @@ export const ClickButton = ({ currentCount, onClickSuccess, userId }: ClickButto
   const { toast } = useToast();
 
   const handleClick = async (e: React.MouseEvent<HTMLButtonElement>) => {
-    if (isClicking) return;
-
     setIsClicking(true);
 
     // Create ripple effect
@@ -99,7 +97,7 @@ export const ClickButton = ({ currentCount, onClickSuccess, userId }: ClickButto
           background: "var(--gradient-primary)",
         }}
       >
-        <span className="glow-primary animate-glow-pulse">CLICK</span>
+        <span className="glow-primary animate-glow-pulse select-none">CLICK</span>
 
         {/* Ripple effects */}
         {ripples.map((ripple) => (

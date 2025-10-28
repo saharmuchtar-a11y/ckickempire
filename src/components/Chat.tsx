@@ -113,13 +113,8 @@ export const Chat = ({ userId, username, isPremium }: ChatProps) => {
               className="animate-slide-up bg-muted rounded-lg p-3 break-words"
             >
               <div className="flex items-center gap-2 mb-1">
-                <span
-                  className={`font-semibold ${
-                    msg.is_premium ? "text-primary glow-primary" : "text-foreground"
-                  }`}
-                >
-                  {msg.username}
-                  {msg.is_premium && " 👑"}
+                <span className="font-semibold text-primary glow-primary">
+                  {msg.username} 👑
                 </span>
                 <span className="text-xs text-muted-foreground">
                   {new Date(msg.created_at).toLocaleTimeString()}

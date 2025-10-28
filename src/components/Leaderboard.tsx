@@ -58,13 +58,8 @@ export const Leaderboard = () => {
                 {getIcon(index)}
               </div>
               <div className="flex-1">
-                <div
-                  className={`font-semibold ${
-                    leader.is_premium ? "text-primary glow-primary" : ""
-                  }`}
-                >
-                  {leader.username}
-                  {leader.is_premium && " 👑"}
+                <div className="font-semibold text-primary glow-primary">
+                  {leader.username} 👑
                 </div>
               </div>
               <div className="text-right">
