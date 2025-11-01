@@ -7,24 +7,24 @@ const Subscribe = () => {
 
   const features = [
     {
-      icon: <Crown className="h-6 w-6" />,
-      title: "Premium Crown Badge",
-      description: "Stand out with a golden crown next to your username",
+      icon: <Zap className="h-6 w-6" />,
+      title: "2x Click Multiplier",
+      description: "Every click counts as 2 clicks! Double your impact",
     },
     {
       icon: <Sparkles className="h-6 w-6" />,
-      title: "Custom Emojis",
-      description: "Access exclusive emoji packs for chat messages",
+      title: "Chat Emojis",
+      description: "Use emojis in chat messages to express yourself",
     },
     {
-      icon: <Zap className="h-6 w-6" />,
-      title: "Special Effects",
-      description: "Unique animations when you hit special numbers",
+      icon: <Crown className="h-6 w-6" />,
+      title: "Premium Badge",
+      description: "Golden crown badge next to your username",
     },
     {
       icon: <Check className="h-6 w-6" />,
-      title: "Colored Username",
-      description: "Your name glows with premium colors",
+      title: "Exclusive Status",
+      description: "Stand out as a premium member in the community",
     },
   ];
 
@@ -42,16 +42,16 @@ const Subscribe = () => {
 
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-12">
-            <h1 className="text-5xl font-bold glow-primary mb-4">
-              Go Premium 👑
+            <h1 className="text-5xl font-bold text-primary mb-4">
+              Premium Membership
             </h1>
             <p className="text-xl text-muted-foreground">
-              Unlock exclusive perks and stand out from the crowd!
+              Boost your clicking power and unlock exclusive features
             </p>
           </div>
 
           {/* Pricing Card */}
-          <div className="bg-card border border-primary rounded-2xl p-8 box-glow-primary mb-12">
+          <div className="bg-card border-2 border-primary rounded-lg p-8 shadow-lg mb-12">
             <div className="text-center mb-8">
               <div className="inline-block bg-primary/20 rounded-full px-4 py-2 mb-4">
                 <span className="text-primary font-bold">LIMITED OFFER</span>

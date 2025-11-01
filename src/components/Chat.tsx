@@ -75,6 +75,19 @@ export const Chat = ({ userId, username, isPremium }: ChatProps) => {
     e.preventDefault();
     if (!newMessage.trim() || sending) return;
 
+    // Check for emojis
+    const emojiRegex = /[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1F900}-\u{1F9FF}\u{1F1E0}-\u{1F1FF}]/gu;
+    const hasEmoji = emojiRegex.test(newMessage);
+
+    if (hasEmoji && !isPremium) {
+      toast({
+        title: "Premium Feature 👑",
+        description: "Emojis are available for premium subscribers only!",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setSending(true);
 
     try {
@@ -100,27 +113,35 @@ export const Chat = ({ userId, username, isPremium }: ChatProps) => {
   };
 
   return (
-    <div className="flex flex-col h-full bg-card border border-border rounded-xl overflow-hidden">
-      <div className="p-4 border-b border-border">
-        <h3 className="font-bold text-lg glow-secondary">Live Chat 💬</h3>
+    <div className="flex flex-col h-full bg-card border-2 border-border rounded-lg overflow-hidden shadow-sm">
+      <div className="p-4 border-b-2 border-border bg-secondary/30">
+        <h3 className="font-bold text-lg text-primary">Live Chat</h3>
+        {!isPremium && (
+          <div className="text-xs text-muted-foreground mt-1">
+            Premium users can use emojis 👑
+          </div>
+        )}
       </div>
 
-      <ScrollArea className="flex-1 p-4" ref={scrollRef}>
-        <div className="space-y-3">
+      <ScrollArea className="flex-1 p-4 bg-secondary/10" ref={scrollRef}>
+        <div className="space-y-2">
           {messages.map((msg) => (
             <div
               key={msg.id}
-              className="animate-slide-up bg-muted rounded-lg p-3 break-words"
+              className="bg-card rounded-lg p-3 border border-border break-words"
             >
               <div className="flex items-center gap-2 mb-1">
-                <span className="font-semibold text-primary glow-primary">
-                  {msg.username} 👑
+                <span className={`font-semibold ${msg.is_premium ? "text-yellow-600" : "text-primary"}`}>
+                  {msg.username}
                 </span>
-                <span className="text-xs text-muted-foreground">
+                {msg.is_premium && (
+                  <span className="text-yellow-500">👑</span>
+                )}
+                <span className="text-xs text-muted-foreground ml-auto">
                   {new Date(msg.created_at).toLocaleTimeString()}
                 </span>
               </div>
-              <p className="text-sm">{msg.message}</p>
+              <p className="text-sm text-foreground">{msg.message}</p>
             </div>
           ))}
         </div>

@@ -6,6 +6,10 @@ import { ClickButton } from "@/components/ClickButton";
 import { Chat } from "@/components/Chat";
 import { Leaderboard } from "@/components/Leaderboard";
 import { AchievementsBadges } from "@/components/AchievementsBadges";
+import { ClickStreak } from "@/components/ClickStreak";
+import { DailyChallenge } from "@/components/DailyChallenge";
+import { GlobalMilestone } from "@/components/GlobalMilestone";
+import { ShareButton } from "@/components/ShareButton";
 import { Button } from "@/components/ui/button";
 import { User, LogOut, Crown } from "lucide-react";
 
@@ -79,19 +83,22 @@ const Game = () => {
   return (
     <div className="min-h-screen grid-bg">
       {/* Header */}
-      <header className="border-b-2 border-primary/20 bg-white/80 backdrop-blur-md shadow-lg">
+      <header className="border-b-2 border-border bg-white backdrop-blur-sm shadow-sm">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <h1 className="text-3xl font-black bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-                🎯 Click Empire
+              <h1 className="text-3xl font-bold text-primary">
+                Click Empire
               </h1>
               {profile && (
-                <div className="text-sm bg-secondary/50 px-3 py-1 rounded-full border border-primary/20">
-                  <span className="text-muted-foreground">Your clicks: </span>
-                  <span className="font-bold text-primary">
-                    {profile.total_clicks.toLocaleString()} 🎉
-                  </span>
+                <div className="flex items-center gap-3">
+                  <div className="text-sm bg-secondary px-4 py-2 rounded-md border border-border">
+                    <span className="text-muted-foreground">Clicks: </span>
+                    <span className="font-bold text-primary">
+                      {profile.total_clicks.toLocaleString()}
+                    </span>
+                  </div>
+                  <ShareButton clicks={profile.total_clicks} />
                 </div>
               )}
             </div>
@@ -105,13 +112,13 @@ const Game = () => {
                 Profile
               </Button>
               <Button
-                variant="outline"
+                variant="default"
                 size="sm"
                 onClick={() => navigate("/subscribe")}
-                className="box-glow-primary"
+                className="bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-white border-0 shadow-sm"
               >
                 <Crown className="h-4 w-4 mr-2" />
-                Go Premium
+                Premium
               </Button>
               <Button variant="outline" size="sm" onClick={handleLogout}>
                 <LogOut className="h-4 w-4 mr-2" />
@@ -123,38 +130,44 @@ const Game = () => {
       </header>
 
       {/* Main Content */}
-      <div className="container mx-auto px-4 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          {/* Leaderboard */}
-          <div className="lg:col-span-1">
+      <div className="container mx-auto px-4 py-6">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+          {/* Left Sidebar - Leaderboard & Milestones */}
+          <div className="lg:col-span-3 space-y-4">
             <Leaderboard />
+            <GlobalMilestone />
           </div>
 
           {/* Main Click Area */}
-          <div className="lg:col-span-2 flex flex-col items-center justify-center space-y-6">
+          <div className="lg:col-span-6 flex flex-col items-center justify-center space-y-4">
             <GlobalCounter />
             <ClickButton
               currentCount={currentCount}
               onClickSuccess={handleClickSuccess}
               userId={user.id}
             />
-            <p className="text-foreground/60 text-center max-w-md font-medium">
-              Join the global clicking madness! Every click counts toward the
-              worldwide total. Can you hit a legendary number? 👀
+            <p className="text-muted-foreground text-center max-w-md text-sm">
+              Every click contributes to the global count. Premium members get 2x multiplier!
             </p>
             
+            {/* User Stats Grid */}
+            <div className="w-full max-w-2xl grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+              <ClickStreak userId={user.id} />
+              <DailyChallenge userId={user.id} />
+            </div>
+
             {/* Achievements Section */}
-            <div className="w-full max-w-2xl mt-4">
+            <div className="w-full max-w-2xl mt-2">
               <AchievementsBadges userId={user.id} />
             </div>
           </div>
 
-          {/* Chat */}
-          <div className="lg:col-span-1 h-[600px]">
+          {/* Right Sidebar - Chat */}
+          <div className="lg:col-span-3 h-[700px]">
             <Chat
               userId={user.id}
               username={profile?.username || "Anonymous"}
-              isPremium={true}
+              isPremium={profile?.is_premium || false}
             />
           </div>
         </div>

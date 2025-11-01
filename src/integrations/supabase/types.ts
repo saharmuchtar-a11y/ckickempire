@@ -79,6 +79,36 @@ export type Database = {
           },
         ]
       }
+      click_streaks: {
+        Row: {
+          created_at: string
+          current_streak: number
+          id: string
+          last_click_date: string | null
+          longest_streak: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          current_streak?: number
+          id?: string
+          last_click_date?: string | null
+          longest_streak?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          current_streak?: number
+          id?: string
+          last_click_date?: string | null
+          longest_streak?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       clicks: {
         Row: {
           clicked_at: string
@@ -108,6 +138,39 @@ export type Database = {
           },
         ]
       }
+      daily_challenges: {
+        Row: {
+          active_date: string
+          created_at: string
+          description: string
+          goal_type: string
+          goal_value: number
+          id: string
+          reward_text: string
+          title: string
+        }
+        Insert: {
+          active_date?: string
+          created_at?: string
+          description: string
+          goal_type: string
+          goal_value: number
+          id?: string
+          reward_text: string
+          title: string
+        }
+        Update: {
+          active_date?: string
+          created_at?: string
+          description?: string
+          goal_type?: string
+          goal_value?: number
+          id?: string
+          reward_text?: string
+          title?: string
+        }
+        Relationships: []
+      }
       global_counter: {
         Row: {
           count: number
@@ -123,6 +186,39 @@ export type Database = {
           count?: number
           id?: number
           last_updated?: string
+        }
+        Relationships: []
+      }
+      global_milestones: {
+        Row: {
+          created_at: string
+          description: string
+          icon: string
+          id: string
+          milestone_value: number
+          reached: boolean
+          reached_at: string | null
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          icon: string
+          id?: string
+          milestone_value: number
+          reached?: boolean
+          reached_at?: string | null
+          title: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          icon?: string
+          id?: string
+          milestone_value?: number
+          reached?: boolean
+          reached_at?: string | null
+          title?: string
         }
         Relationships: []
       }
@@ -185,6 +281,35 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_challenge_completions: {
+        Row: {
+          challenge_id: string
+          completed_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          challenge_id: string
+          completed_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          challenge_id?: string
+          completed_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_challenge_completions_challenge_id_fkey"
+            columns: ["challenge_id"]
+            isOneToOne: false
+            referencedRelation: "daily_challenges"
             referencedColumns: ["id"]
           },
         ]
