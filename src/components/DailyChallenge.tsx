@@ -62,8 +62,8 @@ export const DailyChallenge = ({ userId }: DailyChallengeProps) => {
               key={challenge.id}
               className={`p-3 rounded-lg border transition-all ${
                 isCompleted
-                  ? "bg-green-50 border-green-200"
-                  : "bg-secondary/50 border-border"
+                  ? "bg-green-900/30 border-green-500/50 shadow-[0_0_15px_rgba(34,197,94,0.3)]"
+                  : "bg-secondary/50 border-border hover:border-primary/50"
               }`}
             >
               <div className="flex items-start justify-between gap-2">

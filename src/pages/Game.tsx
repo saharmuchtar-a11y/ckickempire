@@ -11,7 +11,7 @@ import { DailyChallenge } from "@/components/DailyChallenge";
 import { GlobalMilestone } from "@/components/GlobalMilestone";
 import { ShareButton } from "@/components/ShareButton";
 import { Button } from "@/components/ui/button";
-import { User, LogOut, Crown } from "lucide-react";
+import { User, LogOut, Crown, PackageOpen, Backpack } from "lucide-react";
 
 const Game = () => {
   const [user, setUser] = useState<any>(null);
@@ -74,16 +74,16 @@ const Game = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen grid-bg flex items-center justify-center">
+      <div className="min-h-screen space-bg flex items-center justify-center">
         <div className="text-2xl glow-primary animate-glow-pulse">Loading...</div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen grid-bg">
+    <div className="min-h-screen space-bg">
       {/* Header */}
-      <header className="border-b-2 border-border bg-white backdrop-blur-sm shadow-sm">
+      <header className="border-b-2 border-border bg-card/80 backdrop-blur-sm shadow-lg">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
@@ -98,11 +98,41 @@ const Game = () => {
                       {profile.total_clicks.toLocaleString()}
                     </span>
                   </div>
+                  <div className="text-sm bg-yellow-900/30 px-4 py-2 rounded-md border border-yellow-600/50">
+                    <span className="text-yellow-200">🪙 </span>
+                    <span className="font-bold text-yellow-400">
+                      {profile.coins?.toLocaleString() || 0}
+                    </span>
+                  </div>
+                  <div className="text-sm bg-purple-900/30 px-4 py-2 rounded-md border border-purple-600/50">
+                    <span className="text-purple-200">💎 </span>
+                    <span className="font-bold text-purple-400">
+                      {profile.gems?.toLocaleString() || 0}
+                    </span>
+                  </div>
                   <ShareButton clicks={profile.total_clicks} />
                 </div>
               )}
             </div>
             <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigate("/cases")}
+                className="bg-purple-900/30 border-purple-600/50 hover:bg-purple-900/50"
+              >
+                <PackageOpen className="h-4 w-4 mr-2" />
+                Cases
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigate("/inventory")}
+                className="bg-blue-900/30 border-blue-600/50 hover:bg-blue-900/50"
+              >
+                <Backpack className="h-4 w-4 mr-2" />
+                Inventory
+              </Button>
               <Button
                 variant="outline"
                 size="sm"

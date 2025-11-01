@@ -7,6 +7,8 @@ import Game from "./pages/Game";
 import Auth from "./pages/Auth";
 import Profile from "./pages/Profile";
 import Subscribe from "./pages/Subscribe";
+import Cases from "./pages/Cases";
+import Inventory from "./pages/Inventory";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -22,6 +24,8 @@ const App = () => (
           <Route path="/auth" element={<Auth />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/subscribe" element={<Subscribe />} />
+          <Route path="/cases" element={<Cases />} />
+          <Route path="/inventory" element={<Inventory />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

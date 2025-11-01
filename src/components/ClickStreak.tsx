@@ -30,14 +30,20 @@ export const ClickStreak = ({ userId }: ClickStreakProps) => {
   };
 
   return (
-    <Card className="p-4 border-2 border-primary/20">
+    <Card className={`p-4 border-2 transition-all ${
+      streak.current >= 7 
+        ? 'border-orange-500/50 shadow-[0_0_20px_rgba(249,115,22,0.4)]'
+        : 'border-primary/20'
+    }`}>
       <div className="flex items-center justify-between">
         <div>
           <div className="text-sm text-muted-foreground font-medium">
             Daily Streak
           </div>
           <div className="text-3xl font-bold text-primary flex items-center gap-2">
-            <Flame className="h-8 w-8 text-orange-500" />
+            <Flame className={`h-8 w-8 ${
+              streak.current >= 7 ? 'text-orange-500 animate-pulse' : 'text-orange-500/60'
+            }`} />
             {streak.current} Days
           </div>
         </div>

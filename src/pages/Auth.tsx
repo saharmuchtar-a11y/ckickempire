@@ -72,7 +72,7 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen grid-bg flex items-center justify-center p-4">
+    <div className="min-h-screen space-bg flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="bg-card border border-border rounded-xl p-8 box-glow-primary">
           <div className="text-center mb-8">

@@ -2,8 +2,12 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Trophy } from "lucide-react";
+import { ArrowLeft, Trophy, Crown, Lock, User, Settings } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast";
 
 interface Achievement {
   id: string;
@@ -17,7 +21,14 @@ const Profile = () => {
   const [profile, setProfile] = useState<any>(null);
   const [achievements, setAchievements] = useState<Achievement[]>([]);
   const [loading, setLoading] = useState(true);
+  const [usernameDialogOpen, setUsernameDialogOpen] = useState(false);
+  const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
+  const [newUsername, setNewUsername] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [updating, setUpdating] = useState(false);
   const navigate = useNavigate();
+  const { toast } = useToast();
 
   useEffect(() => {
     fetchData();
@@ -70,16 +81,121 @@ const Profile = () => {
     setLoading(false);
   };
 
+  const handleUsernameChange = async () => {
+    if (!newUsername.trim()) {
+      toast({
+        title: "Error",
+        description: "Username cannot be empty",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (newUsername.length < 3) {
+      toast({
+        title: "Error",
+        description: "Username must be at least 3 characters",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setUpdating(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      const { error } = await supabase
+        .from("profiles")
+        .update({ username: newUsername.trim() })
+        .eq("id", session.user.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success! 🎉",
+        description: "Username updated successfully",
+      });
+
+      setUsernameDialogOpen(false);
+      setNewUsername("");
+      fetchData(); // Refresh profile data
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  const handlePasswordChange = async () => {
+    if (!newPassword || !confirmPassword) {
+      toast({
+        title: "Error",
+        description: "Please fill in all password fields",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      toast({
+        title: "Error",
+        description: "Password must be at least 6 characters",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      toast({
+        title: "Error",
+        description: "Passwords do not match",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setUpdating(true);
+    try {
+      const { error } = await supabase.auth.updateUser({
+        password: newPassword,
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Success! 🎉",
+        description: "Password updated successfully",
+      });
+
+      setPasswordDialogOpen(false);
+      setNewPassword("");
+      setConfirmPassword("");
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setUpdating(false);
+    }
+  };
+
   if (loading) {
     return (
-      <div className="min-h-screen grid-bg flex items-center justify-center">
+      <div className="min-h-screen space-bg flex items-center justify-center">
         <div className="text-2xl glow-primary animate-glow-pulse">Loading...</div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen grid-bg">
+    <div className="min-h-screen space-bg">
       <div className="container mx-auto px-4 py-8">
         <Button
           variant="outline"
@@ -118,6 +234,122 @@ const Profile = () => {
                   </div>
                   <div className="text-sm text-muted-foreground">
                     Achievements Unlocked
+                  </div>
+                </div>
+
+                {/* Account Management Section */}
+                <div className="pt-4 border-t border-border">
+                  <div className="flex items-center gap-2 mb-4 text-muted-foreground">
+                    <Settings className="h-4 w-4" />
+                    <span className="text-sm font-semibold">Account Settings</span>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    {/* Manage Subscription */}
+                    <Button
+                      variant="outline"
+                      className="w-full justify-start"
+                      onClick={() => navigate("/subscribe")}
+                    >
+                      <Crown className="h-4 w-4 mr-2" />
+                      Manage Subscription
+                    </Button>
+
+                    {/* Change Username Dialog */}
+                    <Dialog open={usernameDialogOpen} onOpenChange={setUsernameDialogOpen}>
+                      <DialogTrigger asChild>
+                        <Button variant="outline" className="w-full justify-start">
+                          <User className="h-4 w-4 mr-2" />
+                          Change Username
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="sm:max-w-[425px]">
+                        <DialogHeader>
+                          <DialogTitle>Change Username</DialogTitle>
+                          <DialogDescription>
+                            Enter your new username. It must be at least 3 characters long.
+                          </DialogDescription>
+                        </DialogHeader>
+                        <div className="grid gap-4 py-4">
+                          <div className="grid gap-2">
+                            <Label htmlFor="new-username">New Username</Label>
+                            <Input
+                              id="new-username"
+                              placeholder="Enter new username"
+                              value={newUsername}
+                              onChange={(e) => setNewUsername(e.target.value)}
+                              disabled={updating}
+                            />
+                          </div>
+                        </div>
+                        <DialogFooter>
+                          <Button
+                            variant="outline"
+                            onClick={() => setUsernameDialogOpen(false)}
+                            disabled={updating}
+                          >
+                            Cancel
+                          </Button>
+                          <Button onClick={handleUsernameChange} disabled={updating}>
+                            {updating ? "Updating..." : "Save Changes"}
+                          </Button>
+                        </DialogFooter>
+                      </DialogContent>
+                    </Dialog>
+
+                    {/* Change Password Dialog */}
+                    <Dialog open={passwordDialogOpen} onOpenChange={setPasswordDialogOpen}>
+                      <DialogTrigger asChild>
+                        <Button variant="outline" className="w-full justify-start">
+                          <Lock className="h-4 w-4 mr-2" />
+                          Change Password
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="sm:max-w-[425px]">
+                        <DialogHeader>
+                          <DialogTitle>Change Password</DialogTitle>
+                          <DialogDescription>
+                            Enter your new password. It must be at least 6 characters long.
+                          </DialogDescription>
+                        </DialogHeader>
+                        <div className="grid gap-4 py-4">
+                          <div className="grid gap-2">
+                            <Label htmlFor="new-password">New Password</Label>
+                            <Input
+                              id="new-password"
+                              type="password"
+                              placeholder="Enter new password"
+                              value={newPassword}
+                              onChange={(e) => setNewPassword(e.target.value)}
+                              disabled={updating}
+                            />
+                          </div>
+                          <div className="grid gap-2">
+                            <Label htmlFor="confirm-password">Confirm Password</Label>
+                            <Input
+                              id="confirm-password"
+                              type="password"
+                              placeholder="Confirm new password"
+                              value={confirmPassword}
+                              onChange={(e) => setConfirmPassword(e.target.value)}
+                              disabled={updating}
+                            />
+                          </div>
+                        </div>
+                        <DialogFooter>
+                          <Button
+                            variant="outline"
+                            onClick={() => setPasswordDialogOpen(false)}
+                            disabled={updating}
+                          >
+                            Cancel
+                          </Button>
+                          <Button onClick={handlePasswordChange} disabled={updating}>
+                            {updating ? "Updating..." : "Save Changes"}
+                          </Button>
+                        </DialogFooter>
+                      </DialogContent>
+                    </Dialog>
                   </div>
                 </div>
               </div>

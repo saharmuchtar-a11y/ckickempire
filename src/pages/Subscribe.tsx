@@ -29,7 +29,7 @@ const Subscribe = () => {
   ];
 
   return (
-    <div className="min-h-screen grid-bg">
+    <div className="min-h-screen space-bg">
       <div className="container mx-auto px-4 py-8">
         <Button
           variant="outline"
