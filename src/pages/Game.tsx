@@ -5,6 +5,7 @@ import { GlobalCounter } from "@/components/GlobalCounter";
 import { ClickButton } from "@/components/ClickButton";
 import { Chat } from "@/components/Chat";
 import { Leaderboard } from "@/components/Leaderboard";
+import { AchievementsBadges } from "@/components/AchievementsBadges";
 import { Button } from "@/components/ui/button";
 import { User, LogOut, Crown } from "lucide-react";
 
@@ -78,16 +79,18 @@ const Game = () => {
   return (
     <div className="min-h-screen grid-bg">
       {/* Header */}
-      <header className="border-b border-border bg-card/50 backdrop-blur">
+      <header className="border-b-2 border-primary/20 bg-white/80 backdrop-blur-md shadow-lg">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <h1 className="text-2xl font-bold glow-primary">Click Empire</h1>
+              <h1 className="text-3xl font-black bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+                🎯 Click Empire
+              </h1>
               {profile && (
-                <div className="text-sm">
+                <div className="text-sm bg-secondary/50 px-3 py-1 rounded-full border border-primary/20">
                   <span className="text-muted-foreground">Your clicks: </span>
                   <span className="font-bold text-primary">
-                    {profile.total_clicks.toLocaleString()}
+                    {profile.total_clicks.toLocaleString()} 🎉
                   </span>
                 </div>
               )}
@@ -128,17 +131,22 @@ const Game = () => {
           </div>
 
           {/* Main Click Area */}
-          <div className="lg:col-span-2 flex flex-col items-center justify-center space-y-8">
+          <div className="lg:col-span-2 flex flex-col items-center justify-center space-y-6">
             <GlobalCounter />
             <ClickButton
               currentCount={currentCount}
               onClickSuccess={handleClickSuccess}
               userId={user.id}
             />
-            <p className="text-muted-foreground text-center max-w-md">
+            <p className="text-foreground/60 text-center max-w-md font-medium">
               Join the global clicking madness! Every click counts toward the
               worldwide total. Can you hit a legendary number? 👀
             </p>
+            
+            {/* Achievements Section */}
+            <div className="w-full max-w-2xl mt-4">
+              <AchievementsBadges userId={user.id} />
+            </div>
           </div>
 
           {/* Chat */}

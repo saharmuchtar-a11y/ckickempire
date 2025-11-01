@@ -72,13 +72,58 @@ export const ClickButton = ({ currentCount, onClickSuccess, userId }: ClickButto
     })();
   };
 
-  const checkAchievements = async (count: number) => {
-    const specialNumbers = [666, 777, 6969, 10000, 42069];
-    if (specialNumbers.includes(count)) {
-      toast({
-        title: `🎉 SPECIAL NUMBER! ${count}`,
-        description: "You hit a legendary number!",
-      });
+  const checkAchievements = async (globalCount: number) => {
+    // Fetch all achievements
+    const { data: achievements } = await supabase
+      .from("achievements")
+      .select("*");
+
+    if (!achievements) return;
+
+    // Get user's current total clicks
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("total_clicks")
+      .eq("id", userId)
+      .single();
+
+    if (!profile) return;
+
+    const userClicks = profile.total_clicks;
+
+    // Check each achievement
+    for (const achievement of achievements) {
+      let shouldUnlock = false;
+
+      if (achievement.condition_type === "total_clicks") {
+        shouldUnlock = userClicks >= achievement.condition_value;
+      } else if (achievement.condition_type === "special_number") {
+        shouldUnlock = globalCount === achievement.condition_value;
+      }
+
+      if (shouldUnlock) {
+        // Check if already unlocked
+        const { data: existing } = await supabase
+          .from("user_achievements")
+          .select("id")
+          .eq("user_id", userId)
+          .eq("achievement_id", achievement.id)
+          .single();
+
+        if (!existing) {
+          // Unlock the achievement
+          await supabase.from("user_achievements").insert({
+            user_id: userId,
+            achievement_id: achievement.id,
+          });
+
+          toast({
+            title: `${achievement.icon} ${achievement.name} Unlocked!`,
+            description: achievement.description,
+            duration: 5000,
+          });
+        }
+      }
     }
   };
 
@@ -86,12 +131,15 @@ export const ClickButton = ({ currentCount, onClickSuccess, userId }: ClickButto
     <div className="relative">
       <Button
         onClick={handleClick}
-        className="relative overflow-hidden w-64 h-64 rounded-full text-8xl font-bold box-glow-primary hover:scale-105 active:scale-95 transition-transform duration-100"
+        className="relative overflow-hidden w-64 h-64 rounded-full text-7xl font-black box-glow-primary hover:scale-105 active:scale-95 transition-transform duration-100 shadow-2xl"
         style={{
           background: "var(--gradient-primary)",
         }}
       >
-        <span className="glow-primary animate-glow-pulse select-none">CLICK</span>
+        <span className="select-none drop-shadow-lg">
+          CLICK<br/>
+          <span className="text-5xl">ME! 😄</span>
+        </span>
 
         {/* Ripple effects */}
         {ripples.map((ripple) => (
