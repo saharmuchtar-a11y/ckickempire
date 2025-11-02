@@ -83,7 +83,9 @@ const Cases = () => {
   const openCase = async (caseType: CaseType) => {
     if (!profile) return;
 
-    // Check if user can afford it
+    // Note: coins and gems currency not yet implemented
+    // When implemented, add these fields to the profiles table and uncomment these checks
+    /*
     if (caseType.price_coins && profile.coins < caseType.price_coins) {
       toast({
         title: "Not enough coins! 🪙",
@@ -101,13 +103,12 @@ const Cases = () => {
       });
       return;
     }
+    */
 
     setOpening({ items: [], isOpening: true });
 
     try {
-      // Note: coins and gems currency not yet implemented
-      // When implemented, add these fields to the profiles table
-      // For now, we'll skip the cost deduction
+      // For now, allow all cases to be opened for free
       
       // Determine rarity based on weights
       const rarity = selectRarityFromWeights(caseType.rarity_weights);
