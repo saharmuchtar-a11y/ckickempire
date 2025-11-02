@@ -105,21 +105,10 @@ const Cases = () => {
     setOpening({ items: [], isOpening: true });
 
     try {
-      // Deduct cost
-      if (caseType.price_coins) {
-        await supabase
-          .from("profiles")
-          .update({ coins: profile.coins - caseType.price_coins })
-          .eq("id", profile.id);
-      }
-
-      if (caseType.price_gems) {
-        await supabase
-          .from("profiles")
-          .update({ gems: profile.gems - caseType.price_gems })
-          .eq("id", profile.id);
-      }
-
+      // Note: coins and gems currency not yet implemented
+      // When implemented, add these fields to the profiles table
+      // For now, we'll skip the cost deduction
+      
       // Determine rarity based on weights
       const rarity = selectRarityFromWeights(caseType.rarity_weights);
 

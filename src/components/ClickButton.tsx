@@ -140,7 +140,7 @@ export const ClickButton = ({ currentCount, onClickSuccess, userId }: ClickButto
     // Fire and forget - don't wait for the response
     (async () => {
       try {
-        // Check if user is premium for 2x multiplier
+        // Get user's current premium status and clicks for cool number checking
         const { data: profile } = await supabase
           .from("profiles")
           .select("is_premium, total_clicks")
@@ -148,27 +148,33 @@ export const ClickButton = ({ currentCount, onClickSuccess, userId }: ClickButto
           .single();
 
         const isPremium = profile?.is_premium || false;
-        const clickMultiplier = isPremium ? 2 : 1;
         const currentUserClicks = profile?.total_clicks || 0;
 
-        // Increment the global counter
-        const { data: counterData, error: counterError } = await supabase
-          .from("global_counter")
-          .select("count")
-          .eq("id", 1)
-          .single();
+        // Use secure RPC to increment global counter with server-side validation
+        const { data: counterResult, error: counterError } = await supabase.rpc(
+          "increment_global_counter_secure",
+          {
+            p_user_id: userId,
+            p_is_premium: isPremium,
+          }
+        );
 
-        if (counterError) throw counterError;
+        if (counterError) {
+          // Handle rate limiting gracefully
+          if (counterError.message.includes("Rate limit")) {
+            toast({
+              title: "Slow down! ⏱️",
+              description: "Please wait a moment between clicks",
+              variant: "destructive",
+              duration: 2000,
+            });
+            return;
+          }
+          throw counterError;
+        }
 
-        const newCount = (counterData?.count || 0) + clickMultiplier;
-
-        // Update global counter
-        const { error: updateError } = await supabase
-          .from("global_counter")
-          .update({ count: newCount, last_updated: new Date().toISOString() })
-          .eq("id", 1);
-
-        if (updateError) throw updateError;
+        const newCount = (counterResult as any).new_count;
+        const clickMultiplier = (counterResult as any).increment;
 
         // Record the click
         const { error: clickError } = await supabase.from("clicks").insert({
@@ -178,15 +184,16 @@ export const ClickButton = ({ currentCount, onClickSuccess, userId }: ClickButto
 
         if (clickError) throw clickError;
 
-        // Update user's total clicks (with multiplier)
-        for (let i = 0; i < clickMultiplier; i++) {
-          await supabase.rpc("increment_user_clicks", {
-            user_id: userId,
-          });
-        }
+        // Use secure RPC to increment user clicks with server-side multiplier check
+        const { data: actualMultiplier, error: userClickError } = await supabase.rpc(
+          "increment_user_clicks_with_multiplier",
+          { p_user_id: userId }
+        );
+
+        if (userClickError) throw userClickError;
 
         // Check for cool numbers on user's personal count
-        const newUserTotal = currentUserClicks + clickMultiplier;
+        const newUserTotal = currentUserClicks + (actualMultiplier || clickMultiplier);
         await checkCoolNumber(newUserTotal);
 
         // Update streak
@@ -197,11 +204,11 @@ export const ClickButton = ({ currentCount, onClickSuccess, userId }: ClickButto
 
         onClickSuccess();
 
-        // Show premium bonus toast
-        if (isPremium && clickMultiplier > 1) {
+        // Show premium bonus toast based on server response
+        if (actualMultiplier && actualMultiplier > 1) {
           toast({
             title: "Premium Bonus! 🌟",
-            description: `+${clickMultiplier} clicks (2x multiplier active)`,
+            description: `+${actualMultiplier} clicks (2x multiplier active)`,
             duration: 2000,
           });
         }

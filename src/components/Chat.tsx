@@ -98,7 +98,19 @@ export const Chat = ({ userId, username, isPremium }: ChatProps) => {
         is_premium: isPremium,
       });
 
-      if (error) throw error;
+      if (error) {
+        // Handle server-side emoji validation error
+        if (error.message.includes("Emojis are only available")) {
+          toast({
+            title: "Premium Feature 👑",
+            description: "Emojis are available for premium subscribers only!",
+            variant: "destructive",
+          });
+          setSending(false);
+          return;
+        }
+        throw error;
+      }
 
       setNewMessage("");
     } catch (error: any) {
