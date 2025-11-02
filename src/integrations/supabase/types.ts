@@ -319,7 +319,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      increment_global_counter_secure: {
+        Args: { p_is_premium: boolean; p_user_id: string }
+        Returns: Json
+      }
       increment_user_clicks: { Args: { user_id: string }; Returns: undefined }
+      increment_user_clicks_with_multiplier: {
+        Args: { p_user_id: string }
+        Returns: number
+      }
     }
     Enums: {
       [_ in never]: never
