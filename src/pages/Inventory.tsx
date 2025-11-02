@@ -9,23 +9,26 @@ import { useToast } from "@/hooks/use-toast";
 import { getRarityColor, getRarityText } from "@/lib/coolNumbers";
 import type { CoolNumberRarity } from "@/lib/coolNumbers";
 
-interface InventoryItem {
+interface Item {
+  id: string;
+  name: string;
+  description: string;
+  item_type: string;
+  rarity: CoolNumberRarity;
+  image_url?: string;
+  preview_data?: any;
+}
+
+interface UserItem {
   id: string;
   item_id: string;
-  quantity: number;
-  is_equipped: boolean;
-  cosmetic_item: {
-    id: string;
-    name: string;
-    description: string;
-    category: string;
-    rarity: CoolNumberRarity;
-    image_url?: string;
-  };
+  equipped: boolean;
+  obtained_at: string;
+  items: Item;
 }
 
 const Inventory = () => {
-  const [inventory, setInventory] = useState<InventoryItem[]>([]);
+  const [inventory, setInventory] = useState<UserItem[]>([]);
   const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("all");
@@ -58,45 +61,52 @@ const Inventory = () => {
     }
 
     // Fetch inventory with items
-    const { data: inventoryData, error } = await (supabase as any)
-      .from("user_inventory")
+    const { data: inventoryData, error } = await supabase
+      .from("user_items")
       .select(`
         *,
-        cosmetic_item:cosmetic_items (*)
+        items (*)
       `)
       .eq("user_id", session.user.id);
 
     if (error) {
       console.error("Error fetching inventory:", error);
     } else if (inventoryData) {
-      setInventory(inventoryData);
+      setInventory(inventoryData as any);
     }
 
     setLoading(false);
   };
 
-  const equipItem = async (inventoryItem: InventoryItem) => {
+  const equipItem = async (userItem: UserItem) => {
     if (!profile) return;
 
     try {
-      const category = inventoryItem.cosmetic_item.category;
+      const itemType = userItem.items.item_type;
 
-      // Unequip all items in this category
-      await (supabase as any)
-        .from("user_inventory")
-        .update({ is_equipped: false })
+      // Unequip all items of this type for this user
+      const { data: userItems } = await supabase
+        .from("user_items")
+        .select("id, items!inner(item_type)")
         .eq("user_id", profile.id)
-        .eq("cosmetic_item.category", category);
+        .eq("items.item_type", itemType);
+
+      if (userItems) {
+        await supabase
+          .from("user_items")
+          .update({ equipped: false })
+          .in("id", userItems.map((item: any) => item.id));
+      }
 
       // Equip this item
-      await (supabase as any)
-        .from("user_inventory")
-        .update({ is_equipped: true })
-        .eq("id", inventoryItem.id);
+      await supabase
+        .from("user_items")
+        .update({ equipped: true })
+        .eq("id", userItem.id);
 
       toast({
         title: "Item equipped! ✨",
-        description: `${inventoryItem.cosmetic_item.name} is now active`,
+        description: `${userItem.items.name} is now active`,
       });
 
       fetchData(); // Refresh inventory
@@ -110,18 +120,18 @@ const Inventory = () => {
     }
   };
 
-  const unequipItem = async (inventoryItem: InventoryItem) => {
+  const unequipItem = async (userItem: UserItem) => {
     if (!profile) return;
 
     try {
-      await (supabase as any)
-        .from("user_inventory")
-        .update({ is_equipped: false })
-        .eq("id", inventoryItem.id);
+      await supabase
+        .from("user_items")
+        .update({ equipped: false })
+        .eq("id", userItem.id);
 
       toast({
         title: "Item unequipped",
-        description: `${inventoryItem.cosmetic_item.name} has been removed`,
+        description: `${userItem.items.name} has been removed`,
       });
 
       fetchData(); // Refresh inventory
@@ -135,57 +145,42 @@ const Inventory = () => {
     }
   };
 
-  const getCategoryIcon = (category: string) => {
-    switch (category) {
+  const getCategoryIcon = (itemType: string) => {
+    switch (itemType) {
       case 'button_skin':
         return '🎨';
-      case 'click_effect':
+      case 'animation':
         return '✨';
-      case 'profile_frame':
-        return '🖼️';
-      case 'chat_emote':
-        return '😀';
-      case 'sound_pack':
-        return '🔊';
-      case 'title':
-        return '👑';
+      case 'cursor':
+        return '🖱️';
       default:
         return '🎁';
     }
   };
 
-  const getCategoryName = (category: string) => {
-    switch (category) {
+  const getCategoryName = (itemType: string) => {
+    switch (itemType) {
       case 'button_skin':
         return 'Button Skins';
-      case 'click_effect':
-        return 'Click Effects';
-      case 'profile_frame':
-        return 'Profile Frames';
-      case 'chat_emote':
-        return 'Chat Emotes';
-      case 'sound_pack':
-        return 'Sound Packs';
-      case 'title':
-        return 'Titles';
+      case 'animation':
+        return 'Animations';
+      case 'cursor':
+        return 'Cursors';
       default:
         return 'Other';
     }
   };
 
-  const filterByCategory = (items: InventoryItem[], category: string) => {
+  const filterByCategory = (items: UserItem[], category: string) => {
     if (category === 'all') return items;
-    return items.filter(item => item.cosmetic_item.category === category);
+    return items.filter(item => item.items.item_type === category);
   };
 
   const categories = [
     { key: 'all', label: '🎁 All Items' },
     { key: 'button_skin', label: '🎨 Button Skins' },
-    { key: 'click_effect', label: '✨ Click Effects' },
-    { key: 'profile_frame', label: '🖼️ Profile Frames' },
-    { key: 'chat_emote', label: '😀 Chat Emotes' },
-    { key: 'sound_pack', label: '🔊 Sound Packs' },
-    { key: 'title', label: '👑 Titles' },
+    { key: 'animation', label: '✨ Animations' },
+    { key: 'cursor', label: '🖱️ Cursors' },
   ];
 
   if (loading) {
@@ -197,7 +192,7 @@ const Inventory = () => {
   }
 
   const filteredItems = filterByCategory(inventory, activeTab);
-  const equippedCount = inventory.filter(item => item.is_equipped).length;
+  const equippedCount = inventory.filter(item => item.equipped).length;
 
   return (
     <div className="min-h-screen space-bg">
@@ -237,7 +232,7 @@ const Inventory = () => {
 
         {/* Category Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full max-w-7xl mx-auto">
-          <TabsList className="grid grid-cols-7 w-full mb-8">
+          <TabsList className="grid grid-cols-4 w-full mb-8">
             {categories.map(cat => (
               <TabsTrigger key={cat.key} value={cat.key}>
                 {cat.label}
@@ -263,23 +258,23 @@ const Inventory = () => {
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                  {filteredItems.map((item) => (
+                  {filteredItems.map((userItem) => (
                     <Card
-                      key={item.id}
+                      key={userItem.id}
                       className="p-6 bg-card/80 backdrop-blur-sm border-2 transition-all"
                       style={{
-                        borderColor: item.is_equipped 
-                          ? getRarityColor(item.cosmetic_item.rarity)
+                        borderColor: userItem.equipped 
+                          ? getRarityColor(userItem.items.rarity)
                           : 'hsl(var(--border))',
-                        boxShadow: item.is_equipped 
-                          ? `0 0 20px ${getRarityColor(item.cosmetic_item.rarity)}40`
+                        boxShadow: userItem.equipped 
+                          ? `0 0 20px ${getRarityColor(userItem.items.rarity)}40`
                           : 'none',
                       }}
                     >
                       <div className="text-center">
                         <div className="text-6xl mb-4 relative">
-                          {getCategoryIcon(item.cosmetic_item.category)}
-                          {item.is_equipped && (
+                          {getCategoryIcon(userItem.items.item_type)}
+                          {userItem.equipped && (
                             <div className="absolute -top-2 -right-2 bg-green-500 rounded-full p-2">
                               <Check className="h-4 w-4 text-white" />
                             </div>
@@ -287,39 +282,38 @@ const Inventory = () => {
                         </div>
                         
                         <h3 className="text-xl font-bold mb-2">
-                          {item.cosmetic_item.name}
+                          {userItem.items.name}
                         </h3>
                         
                         <p className="text-sm text-muted-foreground mb-3">
-                          {item.cosmetic_item.description}
+                          {userItem.items.description}
                         </p>
 
                         <div 
                           className="text-sm font-bold mb-4"
-                          style={{ color: getRarityColor(item.cosmetic_item.rarity) }}
+                          style={{ color: getRarityColor(userItem.items.rarity) }}
                         >
-                          {getRarityText(item.cosmetic_item.rarity)}
+                          {getRarityText(userItem.items.rarity)}
                         </div>
 
                         <div className="text-xs text-muted-foreground mb-4">
-                          {getCategoryName(item.cosmetic_item.category)}
-                          {item.quantity > 1 && ` × ${item.quantity}`}
+                          {getCategoryName(userItem.items.item_type)}
                         </div>
 
-                        {item.is_equipped ? (
+                        {userItem.equipped ? (
                           <Button
                             variant="outline"
                             className="w-full"
-                            onClick={() => unequipItem(item)}
+                            onClick={() => unequipItem(userItem)}
                           >
                             Unequip
                           </Button>
                         ) : (
                           <Button
                             className="w-full box-glow-primary"
-                            onClick={() => equipItem(item)}
+                            onClick={() => equipItem(userItem)}
                             style={{
-                              backgroundColor: getRarityColor(item.cosmetic_item.rarity),
+                              backgroundColor: getRarityColor(userItem.items.rarity),
                             }}
                           >
                             <Sparkles className="h-4 w-4 mr-2" />
