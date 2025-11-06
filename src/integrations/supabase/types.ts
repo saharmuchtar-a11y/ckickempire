@@ -44,6 +44,72 @@ export type Database = {
         }
         Relationships: []
       }
+      case_items: {
+        Row: {
+          case_id: string
+          created_at: string
+          id: string
+          item_id: string
+        }
+        Insert: {
+          case_id: string
+          created_at?: string
+          id?: string
+          item_id: string
+        }
+        Update: {
+          case_id?: string
+          created_at?: string
+          id?: string
+          item_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "case_items_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "case_items_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cases: {
+        Row: {
+          created_at: string
+          description: string
+          id: string
+          image_url: string | null
+          is_free: boolean
+          name: string
+          one_time_only: boolean
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          id?: string
+          image_url?: string | null
+          is_free?: boolean
+          name: string
+          one_time_only?: boolean
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          id?: string
+          image_url?: string | null
+          is_free?: boolean
+          name?: string
+          one_time_only?: boolean
+        }
+        Relationships: []
+      }
       chat_messages: {
         Row: {
           created_at: string
@@ -314,6 +380,35 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_case_openings: {
+        Row: {
+          case_id: string
+          id: string
+          opened_at: string
+          user_id: string
+        }
+        Insert: {
+          case_id: string
+          id?: string
+          opened_at?: string
+          user_id: string
+        }
+        Update: {
+          case_id?: string
+          id?: string
+          opened_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_case_openings_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "cases"
             referencedColumns: ["id"]
           },
         ]

@@ -12,26 +12,23 @@ interface CaseType {
   id: string;
   name: string;
   description: string;
-  price_coins?: number;
-  price_gems?: number;
-  price_usd?: number;
   is_free: boolean;
-  cooldown_hours?: number;
+  one_time_only: boolean;
   image_url?: string;
-  rarity_weights: Record<string, number>;
+  already_opened?: boolean;
 }
 
-interface CosmeticItem {
+interface Item {
   id: string;
   name: string;
   description: string;
-  category: string;
+  item_type: string;
   rarity: CoolNumberRarity;
   image_url?: string;
 }
 
 interface OpeningResult {
-  items: CosmeticItem[];
+  items: Item[];
   isOpening: boolean;
 }
 
@@ -40,6 +37,7 @@ const Cases = () => {
   const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [opening, setOpening] = useState<OpeningResult | null>(null);
+  const [openedCases, setOpenedCases] = useState<Set<string>>(new Set());
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -69,12 +67,22 @@ const Cases = () => {
     }
 
     // Fetch cases
-    const { data: casesData } = await (supabase as any)
-      .from("case_types")
+    const { data: casesData } = await supabase
+      .from("cases")
       .select("*");
 
     if (casesData) {
       setCases(casesData);
+    }
+
+    // Fetch user's opened cases
+    const { data: openingsData } = await supabase
+      .from("user_case_openings")
+      .select("case_id")
+      .eq("user_id", session.user.id);
+
+    if (openingsData) {
+      setOpenedCases(new Set(openingsData.map(o => o.case_id)));
     }
 
     setLoading(false);
@@ -83,63 +91,69 @@ const Cases = () => {
   const openCase = async (caseType: CaseType) => {
     if (!profile) return;
 
-    // Note: coins and gems currency not yet implemented
-    // When implemented, add these fields to the profiles table and uncomment these checks
-    /*
-    if (caseType.price_coins && profile.coins < caseType.price_coins) {
+    // Check if already opened (for one-time cases)
+    if (caseType.one_time_only && openedCases.has(caseType.id)) {
       toast({
-        title: "Not enough coins! 🪙",
-        description: `You need ${caseType.price_coins} coins to open this case.`,
+        title: "Already opened! 📦",
+        description: "You've already opened this one-time case.",
         variant: "destructive",
       });
       return;
     }
-
-    if (caseType.price_gems && profile.gems < caseType.price_gems) {
-      toast({
-        title: "Not enough gems! 💎",
-        description: `You need ${caseType.price_gems} gems to open this case.`,
-        variant: "destructive",
-      });
-      return;
-    }
-    */
 
     setOpening({ items: [], isOpening: true });
 
     try {
-      // For now, allow all cases to be opened for free
-      
-      // Determine rarity based on weights
-      const rarity = selectRarityFromWeights(caseType.rarity_weights);
+      // Get all items in this case
+      const { data: caseItems } = await supabase
+        .from("case_items")
+        .select(`
+          items (*)
+        `)
+        .eq("case_id", caseType.id);
 
-      // Fetch random items of that rarity
-      const { data: items } = await (supabase as any)
-        .from("cosmetic_items")
-        .select("*")
-        .eq("rarity", rarity)
-        .limit(3);
-
-      if (!items || items.length === 0) {
-        throw new Error("No items found");
+      if (!caseItems || caseItems.length === 0) {
+        throw new Error("No items in this case");
       }
 
-      // Pick 1-3 random items
-      const wonItems = items.slice(0, Math.floor(Math.random() * 3) + 1);
+      // Extract the items
+      const allItems = caseItems.map((ci: any) => ci.items).filter(Boolean);
+
+      // Randomly pick 1-3 items
+      const numItems = Math.min(Math.floor(Math.random() * 3) + 1, allItems.length);
+      const wonItems: Item[] = [];
+      const usedIndices = new Set<number>();
+
+      while (wonItems.length < numItems) {
+        const randomIndex = Math.floor(Math.random() * allItems.length);
+        if (!usedIndices.has(randomIndex)) {
+          wonItems.push(allItems[randomIndex]);
+          usedIndices.add(randomIndex);
+        }
+      }
 
       // Add items to user inventory
       for (const item of wonItems) {
-        await (supabase as any).from("user_inventory").insert({
-          user_id: profile.id,
-          item_id: item.id,
-        });
+        // Check if user already has this item
+        const { data: existing } = await supabase
+          .from("user_items")
+          .select("id")
+          .eq("user_id", profile.id)
+          .eq("item_id", item.id)
+          .maybeSingle();
+
+        if (!existing) {
+          await supabase.from("user_items").insert({
+            user_id: profile.id,
+            item_id: item.id,
+          });
+        }
       }
 
       // Record opening
-      await (supabase as any).from("case_openings").insert({
+      await supabase.from("user_case_openings").insert({
         user_id: profile.id,
-        case_type_id: caseType.id,
-        items_won: wonItems.map(i => ({ id: i.id, name: i.name, rarity: i.rarity })),
+        case_id: caseType.id,
       });
 
       // Show results after animation
@@ -152,7 +166,7 @@ const Cases = () => {
           duration: 5000,
         });
 
-        fetchData(); // Refresh profile balance
+        fetchData(); // Refresh to update opened status
       }, 3000);
     } catch (error: any) {
       console.error("Error opening case:", error);
@@ -163,22 +177,6 @@ const Cases = () => {
       });
       setOpening(null);
     }
-  };
-
-  const selectRarityFromWeights = (weights: Record<string, number>): CoolNumberRarity => {
-    const rarities: CoolNumberRarity[] = ['common', 'rare', 'epic', 'legendary', 'mythic'];
-    const totalWeight = Object.values(weights).reduce((sum, w) => sum + w, 0);
-    let random = Math.random() * totalWeight;
-
-    for (const rarity of rarities) {
-      const weight = weights[rarity] || 0;
-      if (random < weight) {
-        return rarity;
-      }
-      random -= weight;
-    }
-
-    return 'common';
   };
 
   const closeResults = () => {
@@ -212,79 +210,63 @@ const Cases = () => {
           <p className="text-xl text-muted-foreground">
             Open cases to get cosmetics, effects, and exclusive items!
           </p>
-          
-          {/* Currency display */}
-          {profile && (
-            <div className="flex items-center justify-center gap-4 mt-4">
-              <div className="text-lg bg-yellow-900/30 px-6 py-3 rounded-lg border border-yellow-600/50">
-                <span className="text-yellow-200">🪙 </span>
-                <span className="font-bold text-yellow-400">
-                  {profile.coins?.toLocaleString() || 0}
-                </span>
-              </div>
-              <div className="text-lg bg-purple-900/30 px-6 py-3 rounded-lg border border-purple-600/50">
-                <span className="text-purple-200">💎 </span>
-                <span className="font-bold text-purple-400">
-                  {profile.gems?.toLocaleString() || 0}
-                </span>
-              </div>
-            </div>
-          )}
         </div>
 
         {/* Cases grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-7xl mx-auto">
-          {cases.map((caseType) => (
-            <Card
-              key={caseType.id}
-              className="p-6 bg-card/80 backdrop-blur-sm border-2 border-border hover:border-primary/50 transition-all cursor-pointer group"
-              onClick={() => !opening && openCase(caseType)}
-            >
-              <div className="text-center">
-                <div className="text-6xl mb-4 group-hover:scale-110 transition-transform">
-                  📦
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
+          {cases.map((caseType) => {
+            const alreadyOpened = openedCases.has(caseType.id);
+            const canOpen = !alreadyOpened || !caseType.one_time_only;
+            
+            return (
+              <Card
+                key={caseType.id}
+                className={`p-6 bg-card/80 backdrop-blur-sm border-2 transition-all ${
+                  canOpen && !opening
+                    ? 'border-border hover:border-primary/50 cursor-pointer group'
+                    : 'border-muted opacity-60 cursor-not-allowed'
+                }`}
+                onClick={() => canOpen && !opening && openCase(caseType)}
+              >
+                <div className="text-center">
+                  <div className={`text-6xl mb-4 ${canOpen ? 'group-hover:scale-110 transition-transform' : ''}`}>
+                    📦
+                  </div>
+                  <h3 className="text-xl font-bold mb-2 glow-primary">
+                    {caseType.name}
+                  </h3>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    {caseType.description}
+                  </p>
+
+                  {caseType.is_free ? (
+                    <div className="bg-green-900/30 text-green-400 px-4 py-2 rounded-lg border border-green-600/50 font-bold mb-2">
+                      FREE
+                      {caseType.one_time_only && (
+                        <div className="text-xs text-green-300 mt-1">
+                          One-time only
+                        </div>
+                      )}
+                    </div>
+                  ) : null}
+
+                  {alreadyOpened && caseType.one_time_only && (
+                    <div className="bg-muted text-muted-foreground px-4 py-2 rounded-lg border border-border font-bold mb-2">
+                      ✓ Already Opened
+                    </div>
+                  )}
+
+                  <Button 
+                    className="w-full mt-2 box-glow-primary"
+                    disabled={!canOpen || opening !== null}
+                  >
+                    <PackageOpen className="h-4 w-4 mr-2" />
+                    {alreadyOpened && caseType.one_time_only ? 'Opened' : 'Open Case'}
+                  </Button>
                 </div>
-                <h3 className="text-xl font-bold mb-2 glow-primary">
-                  {caseType.name}
-                </h3>
-                <p className="text-sm text-muted-foreground mb-4">
-                  {caseType.description}
-                </p>
-
-                {caseType.is_free ? (
-                  <div className="bg-green-900/30 text-green-400 px-4 py-2 rounded-lg border border-green-600/50 font-bold">
-                    FREE
-                    {caseType.cooldown_hours && (
-                      <div className="text-xs text-green-300 mt-1">
-                        Every {caseType.cooldown_hours}h
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    {caseType.price_coins && (
-                      <div className="bg-yellow-900/30 text-yellow-400 px-4 py-2 rounded-lg border border-yellow-600/50 font-bold">
-                        🪙 {caseType.price_coins.toLocaleString()}
-                      </div>
-                    )}
-                    {caseType.price_gems && (
-                      <div className="bg-purple-900/30 text-purple-400 px-4 py-2 rounded-lg border border-purple-600/50 font-bold">
-                        💎 {caseType.price_gems.toLocaleString()}
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                <Button 
-                  className="w-full mt-4 box-glow-primary"
-                  disabled={opening !== null}
-                >
-                  <PackageOpen className="h-4 w-4 mr-2" />
-                  Open Case
-                </Button>
-              </div>
-            </Card>
-          ))}
+              </Card>
+            );
+          })}
         </div>
 
         {/* Opening animation / Results modal */}
@@ -319,11 +301,9 @@ const Cases = () => {
                         }}
                       >
                         <div className="text-4xl mb-2">
-                          {item.category === 'button_skin' && '🎨'}
-                          {item.category === 'click_effect' && '✨'}
-                          {item.category === 'profile_frame' && '🖼️'}
-                          {item.category === 'chat_emote' && '😀'}
-                          {item.category === 'sound_pack' && '🔊'}
+                          {item.item_type === 'button_skin' && '🎨'}
+                          {item.item_type === 'animation' && '✨'}
+                          {item.item_type === 'cursor' && '🖱️'}
                         </div>
                         <h3 className="font-bold mb-1">{item.name}</h3>
                         <p className="text-xs text-muted-foreground mb-2">
