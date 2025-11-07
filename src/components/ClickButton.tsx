@@ -26,11 +26,24 @@ export const ClickButton = ({ currentCount, onClickSuccess, userId }: ClickButto
   const [localClickCount, setLocalClickCount] = useState(0);
   const { toast } = useToast();
 
-  // Check for cool numbers
+  // Check for cool numbers and reward coins
   const checkCoolNumber = async (num: number) => {
     const coolResult = detectCoolNumber(num);
     
     if (coolResult.isCool && coolResult.name) {
+      // Award coins if there's a reward
+      if (coolResult.coinsReward && coolResult.coinsReward > 0) {
+        try {
+          await supabase.rpc("add_coins", {
+            p_user_id: userId,
+            p_amount: coolResult.coinsReward,
+            p_description: `Cool number: ${coolResult.name}`,
+          });
+        } catch (error) {
+          console.error("Error awarding coins:", error);
+        }
+      }
+
       // Show celebration
       const celebrationText = `${coolResult.emoji} ${coolResult.name.toUpperCase()}! ${coolResult.emoji}`;
       setCelebration({ show: true, text: celebrationText, milestone: num });
@@ -41,10 +54,12 @@ export const ClickButton = ({ currentCount, onClickSuccess, userId }: ClickButto
         setCelebration(null);
       }, 3000);
 
-      // Show toast
+      // Show toast with coin reward
       toast({
         title: celebrationText,
-        description: coolResult.description,
+        description: coolResult.coinsReward 
+          ? `${coolResult.description} +${coolResult.coinsReward} coins!` 
+          : coolResult.description,
         duration: 5000,
       });
     }
@@ -167,9 +182,8 @@ export const ClickButton = ({ currentCount, onClickSuccess, userId }: ClickButto
 
         if (userClickError) throw userClickError;
 
-        // Check for cool numbers on user's personal count
-        const newUserTotal = currentUserClicks + (actualMultiplier || clickMultiplier);
-        await checkCoolNumber(newUserTotal);
+        // Check for cool numbers on GLOBAL count
+        await checkCoolNumber(newCount);
 
         // Update streak
         await updateStreak();
