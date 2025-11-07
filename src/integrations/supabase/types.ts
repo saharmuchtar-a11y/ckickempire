@@ -204,6 +204,30 @@ export type Database = {
           },
         ]
       }
+      coin_transactions: {
+        Row: {
+          amount: number
+          created_at: string
+          description: string | null
+          id: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       daily_challenges: {
         Row: {
           active_date: string
@@ -323,6 +347,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          coins: number
           created_at: string
           id: string
           is_premium: boolean
@@ -331,6 +356,7 @@ export type Database = {
           username: string
         }
         Insert: {
+          coins?: number
           created_at?: string
           id: string
           is_premium?: boolean
@@ -339,6 +365,7 @@ export type Database = {
           username: string
         }
         Update: {
+          coins?: number
           created_at?: string
           id?: string
           is_premium?: boolean
@@ -479,6 +506,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      add_coins: {
+        Args: { p_amount: number; p_description?: string; p_user_id: string }
+        Returns: undefined
+      }
       increment_global_counter_secure: {
         Args: { p_is_premium: boolean; p_user_id: string }
         Returns: Json
