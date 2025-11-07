@@ -26,34 +26,11 @@ export const ClickButton = ({ currentCount, onClickSuccess, userId }: ClickButto
   const [localClickCount, setLocalClickCount] = useState(0);
   const { toast } = useToast();
 
-  // Check for cool numbers and reward coins
+  // Check for cool numbers
   const checkCoolNumber = async (num: number) => {
     const coolResult = detectCoolNumber(num);
     
     if (coolResult.isCool && coolResult.name) {
-      // Save cool number to database
-      try {
-        await (supabase as any).from("cool_numbers").insert({
-          user_id: userId,
-          number_value: num,
-          number_type: coolResult.type!,
-          rarity: coolResult.rarity!,
-          coins_rewarded: coolResult.coinsReward || 0,
-        });
-
-        // Award coins
-        if (coolResult.coinsReward && coolResult.coinsReward > 0) {
-          await (supabase as any).rpc("add_coins", {
-            p_user_id: userId,
-            p_amount: coolResult.coinsReward,
-            p_description: `Cool number: ${coolResult.name}`,
-          });
-        }
-      } catch (error) {
-        console.error("Error saving cool number:", error);
-        // Continue even if saving fails
-      }
-
       // Show celebration
       const celebrationText = `${coolResult.emoji} ${coolResult.name.toUpperCase()}! ${coolResult.emoji}`;
       setCelebration({ show: true, text: celebrationText, milestone: num });
@@ -64,12 +41,10 @@ export const ClickButton = ({ currentCount, onClickSuccess, userId }: ClickButto
         setCelebration(null);
       }, 3000);
 
-      // Show toast with coin reward
+      // Show toast
       toast({
         title: celebrationText,
-        description: coolResult.coinsReward 
-          ? `${coolResult.description} +${coolResult.coinsReward} coins!` 
-          : coolResult.description,
+        description: coolResult.description,
         duration: 5000,
       });
     }
@@ -275,23 +250,12 @@ export const ClickButton = ({ currentCount, onClickSuccess, userId }: ClickButto
 
     if (!achievements) return;
 
-    // Get user's current total clicks
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("total_clicks")
-      .eq("id", userId)
-      .single();
-
-    if (!profile) return;
-
-    const userClicks = profile.total_clicks;
-
-    // Check each achievement
+    // Check each achievement based on global count
     for (const achievement of achievements) {
       let shouldUnlock = false;
 
-      if (achievement.condition_type === "total_clicks") {
-        shouldUnlock = userClicks >= achievement.condition_value;
+      if (achievement.condition_type === "global_count") {
+        shouldUnlock = globalCount >= achievement.condition_value;
       } else if (achievement.condition_type === "special_number") {
         shouldUnlock = globalCount === achievement.condition_value;
       }
@@ -303,7 +267,7 @@ export const ClickButton = ({ currentCount, onClickSuccess, userId }: ClickButto
           .select("id")
           .eq("user_id", userId)
           .eq("achievement_id", achievement.id)
-          .single();
+          .maybeSingle();
 
         if (!existing) {
           // Unlock the achievement
