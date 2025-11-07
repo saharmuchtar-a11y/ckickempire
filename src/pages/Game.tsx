@@ -101,13 +101,7 @@ const Game = () => {
                   <div className="text-sm bg-yellow-900/30 px-4 py-2 rounded-md border border-yellow-600/50">
                     <span className="text-yellow-200">🪙 </span>
                     <span className="font-bold text-yellow-400">
-                      {profile.coins?.toLocaleString() || 0}
-                    </span>
-                  </div>
-                  <div className="text-sm bg-purple-900/30 px-4 py-2 rounded-md border border-purple-600/50">
-                    <span className="text-purple-200">💎 </span>
-                    <span className="font-bold text-purple-400">
-                      {profile.gems?.toLocaleString() || 0}
+                      {(profile.coins || 0).toLocaleString()}
                     </span>
                   </div>
                   <ShareButton clicks={profile.total_clicks} />
