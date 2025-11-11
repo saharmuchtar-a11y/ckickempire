@@ -68,8 +68,12 @@ export const ClickButton = ({ currentCount, onClickSuccess, userId }: ClickButto
   // Apply cursor cosmetic globally
   useEffect(() => {
     const cursorItem = equippedItems.find(item => item.item_type === 'cursor');
-    if (cursorItem && cursorItem.preview_data?.cursorUrl) {
-      document.body.style.cursor = `url('${cursorItem.preview_data.cursorUrl}'), auto`;
+    if (cursorItem && cursorItem.preview_data?.emoji) {
+      // Use emoji as cursor - encode it as SVG data URL
+      const emoji = cursorItem.preview_data.emoji;
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32"><text y="24" font-size="24">${emoji}</text></svg>`;
+      const cursorUrl = `data:image/svg+xml;base64,${btoa(svg)}`;
+      document.body.style.cursor = `url('${cursorUrl}') 16 16, auto`;
     } else {
       document.body.style.cursor = 'default';
     }
@@ -373,10 +377,15 @@ export const ClickButton = ({ currentCount, onClickSuccess, userId }: ClickButto
           className="relative overflow-hidden w-64 h-64 rounded-full text-6xl font-bold box-glow-primary hover:scale-110 active:scale-95 transition-all duration-200 shadow-2xl"
           style={buttonStyle}
         >
-          <span className="select-none text-white font-extrabold drop-shadow-lg flex items-center gap-2">
-            {buttonEmoji && <span className="text-5xl">{buttonEmoji}</span>}
-            CLICK
-          </span>
+          {buttonEmoji ? (
+            <span className="select-none text-9xl drop-shadow-lg">
+              {buttonEmoji}
+            </span>
+          ) : (
+            <span className="select-none text-white font-extrabold drop-shadow-lg">
+              CLICK
+            </span>
+          )}
 
           {/* Ripple effects */}
           {ripples.map((ripple) => (
