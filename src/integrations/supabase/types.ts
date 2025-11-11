@@ -82,8 +82,10 @@ export type Database = {
       }
       cases: {
         Row: {
+          coin_cost: number | null
           created_at: string
           description: string
+          gem_cost: number | null
           id: string
           image_url: string | null
           is_free: boolean
@@ -91,8 +93,10 @@ export type Database = {
           one_time_only: boolean
         }
         Insert: {
+          coin_cost?: number | null
           created_at?: string
           description: string
+          gem_cost?: number | null
           id?: string
           image_url?: string | null
           is_free?: boolean
@@ -100,8 +104,10 @@ export type Database = {
           one_time_only?: boolean
         }
         Update: {
+          coin_cost?: number | null
           created_at?: string
           description?: string
+          gem_cost?: number | null
           id?: string
           image_url?: string | null
           is_free?: boolean

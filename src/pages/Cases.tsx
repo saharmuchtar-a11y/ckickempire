@@ -14,6 +14,8 @@ interface CaseType {
   description: string;
   is_free: boolean;
   one_time_only: boolean;
+  coin_cost: number;
+  gem_cost: number;
   image_url?: string;
   already_opened?: boolean;
 }
@@ -101,6 +103,18 @@ const Cases = () => {
       return;
     }
 
+    // Check if user has enough coins
+    if (!caseType.is_free && caseType.coin_cost > 0) {
+      if (profile.coins < caseType.coin_cost) {
+        toast({
+          title: "Not enough coins! 🪙",
+          description: `You need ${caseType.coin_cost} coins to open this case.`,
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
     setOpening({ items: [], isOpening: true });
 
     try {
@@ -130,6 +144,15 @@ const Cases = () => {
           wonItems.push(allItems[randomIndex]);
           usedIndices.add(randomIndex);
         }
+      }
+
+      // Deduct coins if not free
+      if (!caseType.is_free && caseType.coin_cost > 0) {
+        await supabase.rpc("add_coins", {
+          p_user_id: profile.id,
+          p_amount: -caseType.coin_cost,
+          p_description: `Opened ${caseType.name}`,
+        });
       }
 
       // Add items to user inventory
@@ -247,6 +270,10 @@ const Cases = () => {
                           One-time only
                         </div>
                       )}
+                    </div>
+                  ) : caseType.coin_cost > 0 ? (
+                    <div className="bg-yellow-900/30 text-yellow-400 px-4 py-2 rounded-lg border border-yellow-600/50 font-bold mb-2">
+                      🪙 {caseType.coin_cost.toLocaleString()}
                     </div>
                   ) : null}
 
