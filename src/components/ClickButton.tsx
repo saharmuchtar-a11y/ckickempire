@@ -18,13 +18,66 @@ interface Particle {
   size: number;
 }
 
+interface EquippedItem {
+  id: string;
+  item_type: string;
+  name: string;
+  preview_data: any;
+}
+
 export const ClickButton = ({ currentCount, onClickSuccess, userId }: ClickButtonProps) => {
   const [isClicking, setIsClicking] = useState(false);
   const [ripples, setRipples] = useState<{ id: number; x: number; y: number }[]>([]);
   const [particles, setParticles] = useState<Particle[]>([]);
   const [celebration, setCelebration] = useState<{ show: boolean; text: string; milestone: number } | null>(null);
   const [localClickCount, setLocalClickCount] = useState(0);
+  const [equippedItems, setEquippedItems] = useState<EquippedItem[]>([]);
   const { toast } = useToast();
+
+  // Fetch equipped cosmetics
+  useEffect(() => {
+    const fetchEquippedItems = async () => {
+      const { data } = await supabase
+        .from("user_items")
+        .select(`
+          id,
+          items (
+            id,
+            item_type,
+            name,
+            preview_data
+          )
+        `)
+        .eq("user_id", userId)
+        .eq("equipped", true);
+
+      if (data) {
+        const equipped = data.map((ui: any) => ({
+          id: ui.items.id,
+          item_type: ui.items.item_type,
+          name: ui.items.name,
+          preview_data: ui.items.preview_data,
+        }));
+        setEquippedItems(equipped);
+      }
+    };
+
+    fetchEquippedItems();
+  }, [userId]);
+
+  // Apply cursor cosmetic globally
+  useEffect(() => {
+    const cursorItem = equippedItems.find(item => item.item_type === 'cursor');
+    if (cursorItem && cursorItem.preview_data?.cursorUrl) {
+      document.body.style.cursor = `url('${cursorItem.preview_data.cursorUrl}'), auto`;
+    } else {
+      document.body.style.cursor = 'default';
+    }
+
+    return () => {
+      document.body.style.cursor = 'default';
+    };
+  }, [equippedItems]);
 
   // Check for cool numbers and reward coins
   const checkCoolNumber = async (num: number) => {
@@ -67,7 +120,12 @@ export const ClickButton = ({ currentCount, onClickSuccess, userId }: ClickButto
 
   // Function to create particles
   const createParticles = (centerX: number, centerY: number, count: number = 8) => {
-    const colors = ["#4A90E2", "#50E3C2", "#F5A623", "#BD10E0", "#F8E71C"];
+    // Check for equipped animation
+    const animationItem = equippedItems.find(item => item.item_type === 'animation');
+    const particleColor = animationItem?.preview_data?.color || null;
+    
+    const defaultColors = ["#4A90E2", "#50E3C2", "#F5A623", "#BD10E0", "#F8E71C"];
+    const colors = particleColor ? [particleColor] : defaultColors;
     const newParticles: Particle[] = [];
     
     for (let i = 0; i < count; i++) {
@@ -300,17 +358,23 @@ export const ClickButton = ({ currentCount, onClickSuccess, userId }: ClickButto
     }
   };
 
+  // Get equipped button skin
+  const buttonSkin = equippedItems.find(item => item.item_type === 'button_skin');
+  const buttonStyle = buttonSkin?.preview_data?.background 
+    ? { background: buttonSkin.preview_data.background }
+    : { background: "var(--gradient-primary)" };
+  const buttonEmoji = buttonSkin?.preview_data?.emoji || null;
+
   return (
     <>
       <div className="relative">
         <Button
           onClick={handleClick}
           className="relative overflow-hidden w-64 h-64 rounded-full text-6xl font-bold box-glow-primary hover:scale-110 active:scale-95 transition-all duration-200 shadow-2xl"
-          style={{
-            background: "var(--gradient-primary)",
-          }}
+          style={buttonStyle}
         >
-          <span className="select-none text-white font-extrabold drop-shadow-lg">
+          <span className="select-none text-white font-extrabold drop-shadow-lg flex items-center gap-2">
+            {buttonEmoji && <span className="text-5xl">{buttonEmoji}</span>}
             CLICK
           </span>
 
