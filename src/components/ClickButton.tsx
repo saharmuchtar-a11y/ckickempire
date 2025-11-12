@@ -68,13 +68,23 @@ export const ClickButton = ({ currentCount, onClickSuccess, userId }: ClickButto
   // Apply cursor cosmetic globally
   useEffect(() => {
     const cursorItem = equippedItems.find(item => item.item_type === 'cursor');
-    if (cursorItem && cursorItem.preview_data?.emoji) {
-      // Use emoji as cursor - encode it as SVG data URL
-      const emoji = cursorItem.preview_data.emoji;
-      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32"><text y="24" font-size="24">${emoji}</text></svg>`;
-      const cursorUrl = `data:image/svg+xml;base64,${btoa(svg)}`;
-      document.body.style.cursor = `url('${cursorUrl}') 16 16, auto`;
-    } else {
+    const pd = cursorItem?.preview_data;
+
+    try {
+      if (pd?.cursorUrl) {
+        // Prefer explicit cursor file/url when provided
+        document.body.style.cursor = `url('${pd.cursorUrl}'), auto`;
+      } else if (pd?.emoji) {
+        // Fallback: render emoji as SVG data URL (safe base64 for unicode)
+        const emoji = pd.emoji;
+        const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32"><text y="24" font-size="24">${emoji}</text></svg>`;
+        const base64 = btoa(unescape(encodeURIComponent(svg)));
+        const cursorUrl = `data:image/svg+xml;base64,${base64}`;
+        document.body.style.cursor = `url('${cursorUrl}') 16 16, auto`;
+      } else {
+        document.body.style.cursor = 'default';
+      }
+    } catch {
       document.body.style.cursor = 'default';
     }
 
